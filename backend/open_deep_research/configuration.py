@@ -11,8 +11,6 @@ from pydantic import BaseModel, Field
 class SearchAPI(Enum):
     """Enumeration of available search API providers."""
 
-    ANTHROPIC = "anthropic"
-    OPENAI = "openai"
     DUCKDUCKGO = "duckduckgo"
     NONE = "none"
 
@@ -108,8 +106,6 @@ class Configuration(BaseModel):
                 "description": "Search API to use for research. NOTE: Make sure your Researcher Model supports the selected search API.",
                 "options": [
                     {"label": "DuckDuckGo (Free, no API key)", "value": SearchAPI.DUCKDUCKGO.value},
-                    {"label": "OpenAI Native Web Search", "value": SearchAPI.OPENAI.value},
-                    {"label": "Anthropic Native Web Search", "value": SearchAPI.ANTHROPIC.value},
                     {"label": "None", "value": SearchAPI.NONE.value}
                 ]
             }

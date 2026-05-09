@@ -446,24 +446,12 @@ async def get_search_tool(search_api: SearchAPI):
     """Configure and return search tools based on the specified API provider.
     
     Args:
-        search_api: The search API provider to use (Anthropic, OpenAI, DuckDuckGo, or None)
+        search_api: The search API provider to use (DuckDuckGo or None)
 
     Returns:
         List of configured search tool objects for the specified provider
     """
-    if search_api == SearchAPI.ANTHROPIC:
-        # Anthropic's native web search with usage limits
-        return [{
-            "type": "web_search_20250305", 
-            "name": "web_search", 
-            "max_uses": 5
-        }]
-        
-    elif search_api == SearchAPI.OPENAI:
-        # OpenAI's web search preview functionality
-        return [{"type": "web_search_preview"}]
-        
-    elif search_api == SearchAPI.DUCKDUCKGO:
+    if search_api == SearchAPI.DUCKDUCKGO:
         # Free DuckDuckGo search - compatible with all OpenAI-compatible models
         search_tool = duckduckgo_search
         search_tool.metadata = {
@@ -513,64 +501,6 @@ async def get_all_tools(config: RunnableConfig):
 def get_notes_from_tool_calls(messages: list[MessageLikeRepresentation]):
     """Extract notes from tool call messages."""
     return [tool_msg.content for tool_msg in filter_messages(messages, include_types="tool")]
-
-##########################
-# Model Provider Native Websearch Utils
-##########################
-
-def anthropic_websearch_called(response):
-    """Detect if Anthropic's native web search was used in the response.
-    
-    Args:
-        response: The response object from Anthropic's API
-        
-    Returns:
-        True if web search was called, False otherwise
-    """
-    try:
-        # Navigate through the response metadata structure
-        usage = response.response_metadata.get("usage")
-        if not usage:
-            return False
-        
-        # Check for server-side tool usage information
-        server_tool_use = usage.get("server_tool_use")
-        if not server_tool_use:
-            return False
-        
-        # Look for web search request count
-        web_search_requests = server_tool_use.get("web_search_requests")
-        if web_search_requests is None:
-            return False
-        
-        # Return True if any web search requests were made
-        return web_search_requests > 0
-        
-    except (AttributeError, TypeError):
-        # Handle cases where response structure is unexpected
-        return False
-
-def openai_websearch_called(response):
-    """Detect if OpenAI's web search functionality was used in the response.
-    
-    Args:
-        response: The response object from OpenAI's API
-        
-    Returns:
-        True if web search was called, False otherwise
-    """
-    # Check for tool outputs in the response metadata
-    tool_outputs = response.additional_kwargs.get("tool_outputs")
-    if not tool_outputs:
-        return False
-    
-    # Look for web search calls in the tool outputs
-    for tool_output in tool_outputs:
-        if tool_output.get("type") == "web_search_call":
-            return True
-    
-    return False
-
 
 ##########################
 # Token Limit Exceeded Utils

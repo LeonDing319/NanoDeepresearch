@@ -40,7 +40,6 @@ from open_deep_research.state import (
     SupervisorState,
 )
 from open_deep_research.utils import (
-    anthropic_websearch_called,
     get_all_tools,
     # LEGACY: Commented out for simplified API key handling
     # get_api_key_for_model,  # No longer needed - using direct user API key
@@ -48,7 +47,6 @@ from open_deep_research.utils import (
     get_notes_from_tool_calls,
     get_today_str,
     is_token_limit_exceeded,
-    openai_websearch_called,
     remove_up_to_last_ai_message,
     think_tool,
 )
@@ -493,14 +491,10 @@ async def researcher_tools(state: ResearcherState, config: RunnableConfig) -> Co
     researcher_messages = state.get("researcher_messages", [])
     most_recent_message = researcher_messages[-1]
     
-    # Early exit if no tool calls were made (including native web search)
+    # Early exit if no tool calls were made
     has_tool_calls = bool(most_recent_message.tool_calls)
-    has_native_search = (
-        openai_websearch_called(most_recent_message) or 
-        anthropic_websearch_called(most_recent_message)
-    )
-    
-    if not has_tool_calls and not has_native_search:
+
+    if not has_tool_calls:
         return Command(goto="compress_research")
     
     # Step 2: Handle other tool calls (search, MCP tools, etc.)
