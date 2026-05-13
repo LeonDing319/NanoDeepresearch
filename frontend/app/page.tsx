@@ -46,7 +46,7 @@ function SidebarConfig() {
         >
           <option value="zhipu">{t.zhipuName}</option>
           <option value="deepseek">{t.deepseekName}</option>
-          <option value="kimi">{t.kimiName}</option>
+          <option value="deepseek_v4_pro">{t.deepseekV4ProName}</option>
         </select>
       </div>
 
@@ -423,16 +423,9 @@ function MainContent() {
         <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-neutral-700">
           {!sidebarCollapsed && (
             <div className="flex items-center space-x-3 overflow-hidden flex-1 mr-2">
-              <div className="overflow-hidden relative">
-                <div className="inline-flex animate-scroll-text hover:animation-paused">
-                  <h1 className="text-lg font-bold text-gray-900 dark:text-white whitespace-nowrap">
-                    {t.appTitle}
-                  </h1>
-                  <h1 className="text-lg font-bold text-gray-900 dark:text-white whitespace-nowrap pl-8" aria-hidden="true">
-                    {t.appTitle}
-                  </h1>
-                </div>
-              </div>
+              <h1 className="text-lg font-bold text-gray-900 dark:text-white whitespace-nowrap">
+                {t.appTitle}
+              </h1>
             </div>
           )}
           <button

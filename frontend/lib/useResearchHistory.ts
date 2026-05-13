@@ -96,7 +96,7 @@ export function getModelDisplayName(model: string): string {
   switch (model) {
     case 'zhipu': return '智谱 GLM-4.7'
     case 'deepseek': return 'DeepSeek V3.2'
-    case 'kimi': return 'Kimi K2 Thinking'
+    case 'deepseek_v4_pro': return 'DeepSeek V4 Pro'
     default: return model
   }
 }

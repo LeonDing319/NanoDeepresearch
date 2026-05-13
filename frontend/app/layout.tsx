@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Deep Research Agent",
+  title: "Nano Deepresearch",
   description: "AI-powered deep research assistant",
   icons: {
     icon: "/favicon.svg",

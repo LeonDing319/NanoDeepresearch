@@ -77,7 +77,7 @@ class DeepResearchService:
 
         Args:
             query: Research question/topic
-            model: AI model to use (zhipu, deepseek, kimi)
+            model: AI model to use (zhipu, deepseek, deepseek_v4_pro)
             api_key: User's API key for the selected model
             research_id: Unique identifier for this research session
             cancel_event: Optional event to signal cancellation
@@ -137,7 +137,7 @@ class DeepResearchService:
             
             try:
                 # BEST PRACTICE: Track time manually for timeout handling
-                # Kimi K2 / thinking models need more time per step in comparison mode
+                # Thinking models need more time per step in comparison mode
                 # 300s for comparison (thinking models can take 3-5min per step under load)
                 step_timeout = 300 if comparison_mode else 120
                 async for chunk in self._astream_with_timeout(
@@ -327,15 +327,12 @@ class DeepResearchService:
             model_mapping = self.model_service.get_model_provider_mapping()
             langchain_model = model_mapping.get(model, model)
             
-            # For Kimi, use the model from mapping (should be kimi-k2-instruct-0905)
-            # No override needed - let the model mapping handle it
-            
             # SIMPLIFIED: Direct user API key approach
             # Store user's API key directly in config for immediate use
             user_api_key = api_key
             
             # Configure base URL for different model providers (Chinese AI models)
-            # All three models use OpenAI-compatible API format
+            # All models use OpenAI-compatible API format
             # NOTE: Using config-based base_url instead of global os.environ for concurrent safety
             model_provider = "openai"  # All use OpenAI-compatible API
             base_url = None
@@ -348,10 +345,10 @@ class DeepResearchService:
                 # DeepSeek V3.2 - 火山引擎ARK平台 OpenAI兼容API
                 base_url = "https://ark.cn-beijing.volces.com/api/v3"
                 logger.info(f"Configured DeepSeek V3.2 with Volcengine ARK API, model: {langchain_model}, base_url: {base_url}")
-            elif model == "kimi":
-                # Kimi K2 Thinking - 火山引擎ARK平台 OpenAI兼容API
-                base_url = "https://ark.cn-beijing.volces.com/api/v3"
-                logger.info(f"Configured Kimi K2 Thinking with Volcengine ARK API, model: {langchain_model}, base_url: {base_url}")
+            elif model == "deepseek_v4_pro":
+                # DeepSeek V4 Pro - api.deepseek.com OpenAI兼容API
+                base_url = "https://api.deepseek.com/v1"
+                logger.info(f"Configured DeepSeek V4 Pro with api.deepseek.com, model: {langchain_model}, base_url: {base_url}")
             
             # BEST PRACTICE: Balanced configuration for production use
             # Optimized for reliability, speed, and cost-effectiveness

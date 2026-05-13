@@ -638,10 +638,6 @@ MODEL_TOKEN_LIMITS = {
     "anthropic:claude-sonnet-4-20250514": 200000,
     "anthropic:claude-3-7-sonnet": 200000,
     "anthropic:claude-3-5-sonnet": 200000,
-    # Moonshot / Kimi K2
-    "anthropic:kimi-k2-0905": 128000,
-    "moonshot:kimi-k2-0905-preview": 128000,
-    "moonshot:moonshot-v1-128k": 128000,
     # Others (unchanged)
     "google:gemini-1.5-pro": 2097152,
     "google:gemini-1.5-flash": 1048576,
@@ -767,17 +763,13 @@ def get_config_value(value):
 #             return api_keys.get("ANTHROPIC_API_KEY")
 #         elif model_name.startswith("google"):
 #             return api_keys.get("GOOGLE_API_KEY")
-#         elif model_name.startswith("moonshot"):
-#             return api_keys.get("ANTHROPIC_API_KEY")  # Moonshot uses Anthropic-compatible API
 #         return None
 #     else:
-#         if model_name.startswith("openai:"): 
+#         if model_name.startswith("openai:"):
 #             return os.getenv("OPENAI_API_KEY")
 #         elif model_name.startswith("anthropic:"):
 #             return os.getenv("ANTHROPIC_API_KEY")
 #         elif model_name.startswith("google"):
 #             return os.getenv("GOOGLE_API_KEY")
-#         elif model_name.startswith("moonshot"):
-#             return os.getenv("ANTHROPIC_API_KEY")  # Moonshot uses Anthropic-compatible API
 #         return None
 

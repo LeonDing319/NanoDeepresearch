@@ -39,7 +39,7 @@ class TestBasicEndpoints:
         assert response.status_code == 200
         data = response.json()
         assert "models" in data
-        assert len(data["models"]) >= 3  # Should have at least Zhipu, DeepSeek, Kimi
+        assert len(data["models"]) >= 3  # Should have Zhipu, DeepSeek V3.2, DeepSeek V4 Pro
         
         # Check model structure
         for model in data["models"]:
@@ -121,8 +121,8 @@ class TestModelService:
         # Test valid models
         assert service.validate_model("zhipu") == True
         assert service.validate_model("deepseek") == True
-        assert service.validate_model("kimi") == True
-        
+        assert service.validate_model("deepseek_v4_pro") == True
+
         # Test invalid model
         assert service.validate_model("invalid") == False
     

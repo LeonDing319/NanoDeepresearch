@@ -1,7 +1,7 @@
 # Directory: deep-research-backend/services/model_service.py
 """
 Model Service - Manages AI model configurations and availability
-Supports Zhipu GLM, DeepSeek, and Kimi K2 models (Chinese AI models)
+Supports Zhipu GLM, DeepSeek V3.2 (via Volcengine ARK), and DeepSeek V4 Pro (via DeepSeek official API)
 """
 
 import logging
@@ -52,23 +52,23 @@ class ModelService:
                 ],
                 max_tokens=128000
             ),
-            "kimi": AvailableModel(
-                id="kimi",
-                name="Kimi K2 Thinking (SOTA)",
-                provider="月之暗面",
-                description="Kimi K2 Thinking (251104) - 1T参数MoE思考模型，256k上下文，原生深度思考与工具调用Agent",
+            "deepseek_v4_pro": AvailableModel(
+                id="deepseek_v4_pro",
+                name="DeepSeek V4 Pro",
+                provider="DeepSeek",
+                description="DeepSeek V4 Pro - 1.6T总参数 / 49B激活，1M上下文，思考与非思考双模式",
                 capabilities=[
                     "web_search",
                     "document_analysis",
-                    "multilingual_support",
+                    "code_analysis",
                     "multi-step_reasoning",
                     "structured_output",
+                    "thinking_mode",
                     "tool_calling",
-                    "coding_assistance",
-                    "long_horizon_agency"
+                    "long_context"
                 ],
-                max_tokens=256000
-            )
+                max_tokens=1000000
+            ),
         }
     
     async def get_available_models(self) -> Dict[str, List[AvailableModel]]:
@@ -82,7 +82,7 @@ class ModelService:
             return {
                 "models": list(self._models.values()),
                 "total_count": len(self._models),
-                "supported_providers": ["智谱AI", "DeepSeek", "月之暗面"]
+                "supported_providers": ["智谱AI", "DeepSeek"]
             }
         except Exception as e:
             logger.error(f"Error getting available models: {str(e)}")
@@ -124,8 +124,8 @@ class ModelService:
             "zhipu": "ep-20260210043232-fc9nz",
             # DeepSeek V3.2 - 火山引擎ARK平台 Endpoint ID
             "deepseek": "ep-20260210052620-d8jdr",
-            # Kimi K2 Thinking - 火山引擎ARK平台 Endpoint ID
-            "kimi": "ep-20260202000054-l775v"
+            # DeepSeek V4 Pro - api.deepseek.com model name
+            "deepseek_v4_pro": "deepseek-v4-pro"
         }
     
     def get_api_key_env_var(self, model_id: str) -> Optional[str]:
@@ -139,8 +139,8 @@ class ModelService:
             Environment variable name or None
         """
         env_vars = {
-            "zhipu": "ZHIPU_API_KEY",      # 智谱AI API Key
-            "deepseek": "ARK_API_KEY",       # DeepSeek V3.2 via 火山引擎ARK平台
-            "kimi": "KIMI_API_KEY"          # 月之暗面 API Key
+            "zhipu": "ZHIPU_API_KEY",            # 智谱AI API Key
+            "deepseek": "ARK_API_KEY",            # DeepSeek V3.2 via 火山引擎ARK平台
+            "deepseek_v4_pro": "DEEPSEEK_API_KEY" # DeepSeek V4 Pro via api.deepseek.com
         }
         return env_vars.get(model_id)

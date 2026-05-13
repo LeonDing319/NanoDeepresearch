@@ -85,7 +85,7 @@ const ModelComparison = () => {
 
   // Multi-model comparison state
   const [query, setQuery] = useState('')
-  const [selectedModels, setSelectedModels] = useState<string[]>(['zhipu', 'deepseek', 'kimi'])
+  const [selectedModels, setSelectedModels] = useState<string[]>(['zhipu', 'deepseek', 'deepseek_v4_pro'])
   const [isRunning, setIsRunning] = useState(false)
   const [latestSession, setLatestSession] = useState<ComparisonSession | null>(null)
   const [earlyResults, setEarlyResults] = useState<ComparisonResult[]>([])
@@ -105,7 +105,7 @@ const ModelComparison = () => {
   const availableModels = [
     { id: 'zhipu', name: t.zhipuName, description: t.zhipuDesc },
     { id: 'deepseek', name: t.deepseekName, description: t.deepseekDesc },
-    { id: 'kimi', name: t.kimiName, description: t.kimiDesc }
+    { id: 'deepseek_v4_pro', name: t.deepseekV4ProName, description: t.deepseekV4ProDesc }
   ]
 
   useEffect(() => {
@@ -408,7 +408,7 @@ const ModelComparison = () => {
     reader.onload = (e) => {
       try {
         const keys = JSON.parse(e.target?.result as string)
-        if (keys.zhipu !== undefined || keys.deepseek !== undefined || keys.kimi !== undefined) {
+        if (keys.zhipu !== undefined || keys.deepseek !== undefined || keys.deepseek_v4_pro !== undefined) {
           setApiKeys(keys)
           setError(null)
         } else {

@@ -12,9 +12,9 @@ from pydantic import BaseModel, Field
 
 class ModelType(str, Enum):
     """Supported AI model types"""
-    ZHIPU = "zhipu"        # 智谱 GLM-4.7
-    DEEPSEEK = "deepseek"  # DeepSeek V3.2
-    KIMI = "kimi"          # Kimi K2 Thinking
+    ZHIPU = "zhipu"                       # 智谱 GLM-4.7
+    DEEPSEEK = "deepseek"                 # DeepSeek V3.2 via 火山 ARK
+    DEEPSEEK_V4_PRO = "deepseek_v4_pro"   # DeepSeek V4 Pro via api.deepseek.com
 
 
 class ResearchStage(str, Enum):

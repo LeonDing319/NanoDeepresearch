@@ -110,15 +110,15 @@ interface Translations {
   zhipuDesc: string
   deepseekName: string
   deepseekDesc: string
-  kimiName: string
-  kimiDesc: string
+  deepseekV4ProName: string
+  deepseekV4ProDesc: string
 }
 
 const translations: Record<Language, Translations> = {
   zh: {
-    appTitle: 'Deep Research Agent',
-    research: '研究',
-    compare: '对比',
+    appTitle: 'Nano Deepresearch',
+    research: '单独研究',
+    compare: '对比研究',
     history: '历史',
     aiModel: 'AI 模型',
     apiKey: 'API 密钥',
@@ -216,13 +216,13 @@ const translations: Record<Language, Translations> = {
     zhipuDesc: '智谱AI最新旗舰模型，支持交错式思考',
     deepseekName: 'DeepSeek V3.2',
     deepseekDesc: 'DeepSeek V3.2 671B MoE模型，GPT-5级性能',
-    kimiName: 'Kimi K2 Thinking',
-    kimiDesc: '月之暗面 1T参数思考模型 (251104)',
+    deepseekV4ProName: 'DeepSeek V4 Pro',
+    deepseekV4ProDesc: 'DeepSeek V4 Pro 1.6T参数 / 49B激活，1M上下文',
   },
   en: {
-    appTitle: 'Deep Research Agent',
-    research: 'Research',
-    compare: 'Compare',
+    appTitle: 'Nano Deepresearch',
+    research: 'Single Research',
+    compare: 'Compare Research',
     history: 'History',
     aiModel: 'AI Model',
     apiKey: 'API Key',
@@ -320,8 +320,8 @@ const translations: Record<Language, Translations> = {
     zhipuDesc: 'Zhipu AI flagship model with interleaved thinking',
     deepseekName: 'DeepSeek V3.2',
     deepseekDesc: 'DeepSeek V3.2 671B MoE model, GPT-5 level performance',
-    kimiName: 'Kimi K2 Thinking',
-    kimiDesc: 'Moonshot 1T parameter thinking model (251104)',
+    deepseekV4ProName: 'DeepSeek V4 Pro',
+    deepseekV4ProDesc: 'DeepSeek V4 Pro 1.6T params / 49B active, 1M context',
   }
 }
 

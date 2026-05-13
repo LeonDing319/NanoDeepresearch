@@ -78,7 +78,7 @@ def _debug_log(
 # Initialize FastAPI app with comprehensive configuration
 app = FastAPI(
     title="Deep Research Agent API",
-    description="Streaming deep research API with multiple AI model support (Zhipu GLM-4.7, DeepSeek V3.2, Kimi K2)",
+    description="Streaming deep research API with multiple AI model support (Zhipu GLM-4.7, DeepSeek V3.2, DeepSeek V4 Pro)",
     version="1.0.0",
     docs_url="/docs",
     redoc_url="/redoc"
@@ -124,7 +124,7 @@ async def health_check():
             "model_service": "active",
             "metrics_collector": "active"
         },
-        "supported_models": ["zhipu", "deepseek", "kimi"]
+        "supported_models": ["zhipu", "deepseek", "deepseek_v4_pro"]
     }
 
 @app.post("/research/stream")
@@ -563,7 +563,7 @@ async def run_multi_model_comparison(request: MultiModelComparisonRequest):
             return result
         
         # Per-model timeout to prevent indefinite hanging (safety net)
-        # Thinking models (Kimi K2) can take 3-5min per step; allow enough total time
+        # Thinking models can take 3-5min per step; allow enough total time
         MODEL_TIMEOUT = 600  # 10 minutes per model maximum
         
         async def run_model_with_timeout(model_id: str, model_index: int = 0) -> ComparisonResult:

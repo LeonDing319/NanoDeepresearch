@@ -33,9 +33,9 @@ export interface ResearchMessage {
 }
 
 interface ApiKeys {
-  zhipu: string     // 智谱 GLM API Key
-  deepseek: string  // DeepSeek API Key
-  kimi: string      // Kimi API Key
+  zhipu: string             // 智谱 GLM API Key
+  deepseek: string          // DeepSeek V3.2 via Volcengine ARK
+  deepseek_v4_pro: string   // DeepSeek V4 Pro via api.deepseek.com
 }
 
 interface ResearchState {
@@ -89,7 +89,7 @@ export const ResearchProvider = ({ children }: { children: ReactNode }) => {
         console.warn('Failed to load API keys from localStorage:', error)
       }
     }
-    return { zhipu: '', deepseek: '', kimi: '' }
+    return { zhipu: '', deepseek: '', deepseek_v4_pro: '' }
   })
 
   // Initialize apiKey from stored apiKeys so the submit button is enabled on load
@@ -127,7 +127,7 @@ export const ResearchProvider = ({ children }: { children: ReactNode }) => {
   }
   
   const clearApiKeys = () => {
-    const emptyKeys = { zhipu: '', deepseek: '', kimi: '' }
+    const emptyKeys = { zhipu: '', deepseek: '', deepseek_v4_pro: '' }
     setApiKeysState(emptyKeys)
     setApiKey('')
     
