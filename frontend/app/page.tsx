@@ -21,45 +21,46 @@ import rehypeKatex from 'rehype-katex'
 import 'katex/dist/katex.min.css'
 
 // Sidebar Configuration Component
+// Single research now dispatches different pipeline stages to different upstream models:
+// thinking nodes use Kimi K2.6, compression and final report use DeepSeek V4 Pro.
+// The frontend collects both API keys here; the request body sends them to the backend.
 function SidebarConfig() {
-  const {
-    selectedModel,
-    setSelectedModel,
-    apiKey,
-    setApiKey,
-    isStreaming
-  } = useResearchState()
+  const { apiKeys, setApiKeys, isStreaming } = useResearchState()
   const { t } = useLanguage()
 
   return (
-    <div className="space-y-6">
-      {/* Model Selection */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-          {t.aiModel}
-        </label>
-        <select
-          value={selectedModel}
-          onChange={(e) => setSelectedModel(e.target.value)}
-          className="w-full px-3 py-2 border border-gray-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-zinc-800 focus:border-transparent text-sm"
-          disabled={isStreaming}
-        >
-          <option value="zhipu">{t.zhipuName}</option>
-          <option value="deepseek">{t.deepseekName}</option>
-          <option value="deepseek_v4_pro">{t.deepseekV4ProName}</option>
-          <option value="kimi_k2_6">{t.kimiK26Name}</option>
-        </select>
+    <div className="space-y-5">
+      {/* Fixed stage to model mapping info */}
+      <div className="rounded-md border border-zinc-200 dark:border-neutral-700 bg-zinc-50 dark:bg-neutral-800/50 p-3 text-xs leading-relaxed text-zinc-700 dark:text-zinc-300 space-y-1">
+        <div className="font-semibold text-zinc-900 dark:text-white mb-1">{t.multiStageTitle}</div>
+        <div>{t.multiStageThinking}</div>
+        <div>{t.multiStageWriting}</div>
       </div>
 
-      {/* API Key */}
+      {/* Kimi K2.6 API key */}
       <div>
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-          {t.apiKey}
+          {t.kimiK26Name} {t.apiKey}
         </label>
         <input
           type="password"
-          value={apiKey}
-          onChange={(e) => setApiKey(e.target.value)}
+          value={apiKeys.kimi_k2_6}
+          onChange={(e) => setApiKeys({ kimi_k2_6: e.target.value })}
+          placeholder={t.apiKeyPlaceholder}
+          className="w-full px-3 py-2 border border-gray-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-zinc-800 focus:border-transparent text-sm"
+          disabled={isStreaming}
+        />
+      </div>
+
+      {/* DeepSeek V4 Pro API key */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          {t.deepseekV4ProName} {t.apiKey}
+        </label>
+        <input
+          type="password"
+          value={apiKeys.deepseek_v4_pro}
+          onChange={(e) => setApiKeys({ deepseek_v4_pro: e.target.value })}
           placeholder={t.apiKeyPlaceholder}
           className="w-full px-3 py-2 border border-gray-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-zinc-800 focus:border-transparent text-sm"
           disabled={isStreaming}

@@ -55,7 +55,8 @@ export function getModelDisplayName(modelId: string): string {
     'zhipu': '智谱 GLM-4.7',
     'deepseek': 'DeepSeek V3.2',
     'deepseek_v4_pro': 'DeepSeek V4 Pro',
-    'kimi_k2_6': 'Kimi K2.6'
+    'kimi_k2_6': 'Kimi K2.6',
+    'multi_stage': 'Kimi 思考 + DeepSeek 写作'
   }
   return modelNames[modelId] || modelId
 }
@@ -68,7 +69,8 @@ export function getModelColor(modelId: string): string {
     'zhipu': 'bg-blue-500',
     'deepseek': 'bg-green-500',
     'deepseek_v4_pro': 'bg-purple-500',
-    'kimi_k2_6': 'bg-orange-500'
+    'kimi_k2_6': 'bg-orange-500',
+    'multi_stage': 'bg-zinc-700'
   }
   return modelColors[modelId] || 'bg-gray-500'
 }

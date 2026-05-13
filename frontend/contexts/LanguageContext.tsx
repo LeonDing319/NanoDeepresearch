@@ -112,6 +112,9 @@ interface Translations {
   deepseekV4ProDesc: string
   kimiK26Name: string
   kimiK26Desc: string
+  multiStageTitle: string
+  multiStageThinking: string
+  multiStageWriting: string
 }
 
 const translations: Record<Language, Translations> = {
@@ -218,6 +221,9 @@ const translations: Record<Language, Translations> = {
     deepseekV4ProDesc: 'DeepSeek V4 Pro 1.6T参数 / 49B激活，1M上下文',
     kimiK26Name: 'Kimi K2.6',
     kimiK26Desc: 'Kimi K2.6 1T MoE 模型，256K 上下文，思考模式默认开启',
+    multiStageTitle: '本次研究分阶段调度',
+    multiStageThinking: '思考链路（澄清、研究简报、规划、检索）使用 Kimi K2.6',
+    multiStageWriting: '压缩与最终报告使用 DeepSeek V4 Pro',
   },
   en: {
     appTitle: 'Nano Deepresearch',
@@ -322,6 +328,9 @@ const translations: Record<Language, Translations> = {
     deepseekV4ProDesc: 'DeepSeek V4 Pro 1.6T params / 49B active, 1M context',
     kimiK26Name: 'Kimi K2.6',
     kimiK26Desc: 'Kimi K2.6 1T MoE model, 256K context, thinking mode by default',
+    multiStageTitle: 'Multi stage dispatch this run',
+    multiStageThinking: 'Thinking chain (clarify, brief, plan, retrieval) uses Kimi K2.6',
+    multiStageWriting: 'Compression and final report use DeepSeek V4 Pro',
   }
 }
 

@@ -98,6 +98,7 @@ export function getModelDisplayName(model: string): string {
     case 'deepseek': return 'DeepSeek V3.2'
     case 'deepseek_v4_pro': return 'DeepSeek V4 Pro'
     case 'kimi_k2_6': return 'Kimi K2.6'
+    case 'multi_stage': return 'Kimi 思考 + DeepSeek 写作'
     default: return model
   }
 }
