@@ -4,7 +4,6 @@
 import React, { useState, useRef, useEffect } from 'react'
 import Image from 'next/image'
 import { Send, AlertCircle, Download, ExternalLink, Brain, Menu, X, Copy, Plus } from 'lucide-react'
-import { cn } from '@/lib/utils'
 import { useResearchState } from '@/contexts/ResearchContext'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { createGoogleDoc } from '@/lib/googleDocs'
@@ -34,9 +33,6 @@ interface StreamingEvent {
   error?: string
 }
 
-// Tab types for research process display
-type ResearchTab = 'thinking' | 'sources'
-
 export default function ResearchInterface() {
   const { apiKeys, isStreaming, setIsStreaming } = useResearchState()
   // Single research now dispatches per pipeline stage: Kimi K2.6 for thinking,
@@ -57,7 +53,6 @@ export default function ResearchInterface() {
   const [streamingEvents, setStreamingEvents] = useState<StreamingEvent[]>([])
   const [apiCallLogs, setApiCallLogs] = useState<string[]>([])
   const [currentStage, setCurrentStage] = useState<string>('')
-  const [activeTab, setActiveTab] = useState<ResearchTab>('thinking')
   const [finalReportContent, setFinalReportContent] = useState<string>('')
   const [researchSources, setResearchSources] = useState<string[]>([])
   const [sidebarOpen, setSidebarOpen] = useState(false) // Mobile sidebar state
@@ -77,6 +72,7 @@ export default function ResearchInterface() {
   const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null)
   const lastEventAtRef = useRef<number | null>(null)
   const researchStartTimeRef = useRef<number | null>(null)
+  const savedRef = useRef<boolean>(false)
   const INACTIVITY_TIMEOUT = 60000 // 60 seconds
 
   // Persist/load session data so chat history survives tab switches
@@ -99,7 +95,6 @@ export default function ResearchInterface() {
         if (parsed.apiCallLogs) setApiCallLogs(parsed.apiCallLogs)
         if (parsed.finalReportContent) setFinalReportContent(parsed.finalReportContent)
         if (parsed.researchSources) setResearchSources(parsed.researchSources)
-        if (parsed.activeTab) setActiveTab(parsed.activeTab)
         if (parsed.currentQuery) setCurrentQuery(parsed.currentQuery)
         if (parsed.streamingContent) setStreamingContent(parsed.streamingContent)
       }
@@ -121,7 +116,6 @@ export default function ResearchInterface() {
           apiCallLogs,
           finalReportContent,
           researchSources,
-          activeTab,
           currentQuery,
           streamingContent,
         }
@@ -130,7 +124,7 @@ export default function ResearchInterface() {
     }, 500)
 
     return () => clearTimeout(timeoutId)
-  }, [messages, streamingEvents, apiCallLogs, finalReportContent, researchSources, activeTab, currentQuery, streamingContent, isNewQuery])
+  }, [messages, streamingEvents, apiCallLogs, finalReportContent, researchSources, currentQuery, streamingContent, isNewQuery])
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -291,8 +285,8 @@ export default function ResearchInterface() {
     setStreamingContent('')
     setResearchBrief('')
     setResearchSources([])
-    setActiveTab('thinking')
     researchIdRef.current = null
+    savedRef.current = false
 
     // Set currentQuery AFTER clearing other states
     setCurrentQuery(queryToSend)
@@ -469,15 +463,21 @@ export default function ResearchInterface() {
                   const sources = extractSourcesFromContent(cleanReport)
                   setResearchSources(sources)
 
-                  // Save to InstantDB for persistent history
-                  const researchDuration = researchStartTimeRef.current ? Date.now() - researchStartTimeRef.current : 0
-                  saveResearch({
-                    query: queryToSend,
-                    model: selectedModel,
-                    reportContent: cleanReport,
-                    sources: sources,
-                    duration: researchDuration,
-                  }).catch(err => console.error('InstantDB save failed:', err))
+                  // Save to InstantDB for persistent history (only once per research)
+                  if (!savedRef.current) {
+                    savedRef.current = true
+                    const researchDuration = researchStartTimeRef.current ? Date.now() - researchStartTimeRef.current : 0
+                    saveResearch({
+                      query: queryToSend,
+                      model: selectedModel,
+                      reportContent: cleanReport,
+                      sources: sources,
+                      duration: researchDuration,
+                    }).catch(err => {
+                      savedRef.current = false
+                      console.error('InstantDB save failed:', err)
+                    })
+                  }
 
                   setStreamingEvents(prev => [...prev, eventData])
                   return
@@ -550,23 +550,14 @@ export default function ResearchInterface() {
 
                   const reportContent = findReportContent()
 
-                  // Use setTimeout to avoid setState-within-setState issues
+                  // Use setTimeout to avoid setState-within-setState issues.
+                  // Note: this branch only updates UI; persistence is owned by the
+                  // research_complete (directReport) branch above so we don't double-save.
                   setTimeout(() => {
                     if (reportContent) {
                       console.log('✅ SHOWING FINAL REPORT:', reportContent.substring(0, 200))
                       setFinalReportContent(reportContent)
                       setStreamingContent(reportContent)
-
-                      // Save to InstantDB for persistent history
-                      const researchDuration = researchStartTimeRef.current ? Date.now() - researchStartTimeRef.current : 0
-                      const sourcesFromReport = extractSourcesFromContent(reportContent)
-                      saveResearch({
-                        query: queryToSend,
-                        model: selectedModel,
-                        reportContent: reportContent,
-                        sources: sourcesFromReport,
-                        duration: researchDuration,
-                      }).catch(err => console.error('InstantDB save failed:', err))
                     } else {
                       console.log('❌ NO REPORT FOUND - falling back to message')
                       allEvents.forEach((e, i) => {
@@ -730,7 +721,6 @@ export default function ResearchInterface() {
     setResearchBrief('')
     setResearchSources([])
     setCurrentQuery('')
-    setActiveTab('thinking')
     setIsNewQuery(false)
     setSidebarOpen(false)
 
@@ -1343,47 +1333,6 @@ Generated by Deep Research Agent v2`
     )
   }
 
-  // Render sources (Perplexity-style)
-  const renderSources = () => {
-    const allSources = getAllSources()
-
-    return (
-      <div className="space-y-2">
-        {allSources.map((source, index) => {
-          // Extract domain name for display
-          const domain = source.replace(/^https?:\/\//, '').split('/')[0]
-          return (
-            <a
-              key={`source-${index}`}
-              href={source}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center space-x-3 p-3 rounded-lg border border-gray-200 dark:border-neutral-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors group"
-            >
-              <ExternalLink className="w-4 h-4 text-zinc-900 flex-shrink-0 group-hover:text-zinc-700" />
-              <div className="flex-1 min-w-0">
-                <div className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                  {domain}
-                </div>
-                <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                  {source}
-                </div>
-              </div>
-            </a>
-          )
-        })}
-        {allSources.length === 0 && (
-          <div className="text-sm text-gray-500 dark:text-gray-400 text-center py-8">
-            <ExternalLink className="w-8 h-8 mx-auto mb-2 text-gray-400" />
-            <div>{t.noSourcesAvailable}</div>
-            <div className="text-xs mt-1">{t.sourcesWillAppear}</div>
-          </div>
-        )}
-      </div>
-    )
-  }
-
-
   return (
     <div className="h-screen flex flex-col bg-white dark:bg-neutral-900">
       {/* Header - Fixed Height */}
@@ -1470,41 +1419,18 @@ Generated by Deep Research Agent v2`
         {/* Steps/Thinking/Sources Panel - DIV 2 - Desktop Only */}
         {(streamingEvents.length > 0 || isStreaming) && (
           <div className="hidden md:flex w-80 border-l border-gray-200 dark:border-neutral-700 flex-col flex-shrink-0">
-            {/* Tabs Header - Fixed */}
+            {/* Panel Header - Fixed */}
             <div className="flex-shrink-0 border-b border-gray-200 dark:border-neutral-700">
-              <div className="flex">
-                <button
-                  onClick={() => setActiveTab('thinking')}
-                  className={cn(
-                    "flex-1 px-3 py-2 text-sm font-medium transition-colors",
-                    activeTab === 'thinking'
-                      ? "text-zinc-900 dark:text-zinc-300 border-b-2 border-zinc-900 dark:border-zinc-300"
-                      : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-50"
-                  )}
-                >
-                  <Brain className="w-4 h-4 inline mr-1" />
-                  {t.thinkingSteps}
-                </button>
-                <button
-                  onClick={() => setActiveTab('sources')}
-                  className={cn(
-                    "flex-1 px-3 py-2 text-sm font-medium transition-colors",
-                    activeTab === 'sources'
-                      ? "text-zinc-900 dark:text-zinc-300 border-b-2 border-zinc-900 dark:border-zinc-300"
-                      : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-50"
-                  )}
-                >
-                  <ExternalLink className="w-4 h-4 inline mr-1" />
-                  {t.sources}
-                </button>
+              <div className="px-3 py-2 text-sm font-medium text-zinc-900 dark:text-zinc-300 flex items-center">
+                <Brain className="w-4 h-4 inline mr-1" />
+                {t.thinkingSteps}
               </div>
             </div>
 
-            {/* Tab Content - Takes remaining height and scrolls */}
+            {/* Panel Content - Takes remaining height and scrolls */}
             <div className="flex-1 min-h-0">
               <div className="h-full p-4 overflow-y-auto">
-                {activeTab === 'thinking' && renderThinkingSteps()}
-                {activeTab === 'sources' && renderSources()}
+                {renderThinkingSteps()}
               </div>
             </div>
           </div>
@@ -1532,39 +1458,18 @@ Generated by Deep Research Agent v2`
                 </button>
               </div>
 
-              {/* Tabs */}
-              <div className="flex border-b border-gray-200 dark:border-neutral-700 flex-shrink-0">
-                <button
-                  onClick={() => setActiveTab('thinking')}
-                  className={cn(
-                    "flex-1 px-3 py-2 text-sm font-medium transition-colors",
-                    activeTab === 'thinking'
-                      ? "text-zinc-900 dark:text-zinc-300 border-b-2 border-zinc-900 dark:border-zinc-300"
-                      : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-50"
-                  )}
-                >
+              {/* Panel Header */}
+              <div className="border-b border-gray-200 dark:border-neutral-700 flex-shrink-0">
+                <div className="px-3 py-2 text-sm font-medium text-zinc-900 dark:text-zinc-300 flex items-center">
                   <Brain className="w-4 h-4 inline mr-1" />
                   {t.thinkingSteps}
-                </button>
-                <button
-                  onClick={() => setActiveTab('sources')}
-                  className={cn(
-                    "flex-1 px-3 py-2 text-sm font-medium transition-colors",
-                    activeTab === 'sources'
-                      ? "text-zinc-900 dark:text-zinc-300 border-b-2 border-zinc-900 dark:border-zinc-300"
-                      : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-50"
-                  )}
-                >
-                  <ExternalLink className="w-4 h-4 inline mr-1" />
-                  {t.sources}
-                </button>
+                </div>
               </div>
 
-              {/* Tab Content - Scrollable */}
+              {/* Panel Content - Scrollable */}
               <div className="flex-1 min-h-0">
                 <div className="h-full p-4 overflow-y-auto">
-                  {activeTab === 'thinking' && renderThinkingSteps()}
-                  {activeTab === 'sources' && renderSources()}
+                  {renderThinkingSteps()}
                 </div>
               </div>
             </div>
