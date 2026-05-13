@@ -47,6 +47,7 @@ function SidebarConfig() {
           <option value="zhipu">{t.zhipuName}</option>
           <option value="deepseek">{t.deepseekName}</option>
           <option value="deepseek_v4_pro">{t.deepseekV4ProName}</option>
+          <option value="kimi_k2_6">{t.kimiK26Name}</option>
         </select>
       </div>
 

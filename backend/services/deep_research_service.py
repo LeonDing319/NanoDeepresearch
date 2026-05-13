@@ -77,7 +77,7 @@ class DeepResearchService:
 
         Args:
             query: Research question/topic
-            model: AI model to use (zhipu, deepseek, deepseek_v4_pro)
+            model: AI model to use (zhipu, deepseek, deepseek_v4_pro, kimi_k2_6)
             api_key: User's API key for the selected model
             research_id: Unique identifier for this research session
             cancel_event: Optional event to signal cancellation
@@ -349,6 +349,10 @@ class DeepResearchService:
                 # DeepSeek V4 Pro - api.deepseek.com OpenAI兼容API
                 base_url = "https://api.deepseek.com/v1"
                 logger.info(f"Configured DeepSeek V4 Pro with api.deepseek.com, model: {langchain_model}, base_url: {base_url}")
+            elif model == "kimi_k2_6":
+                # Kimi K2.6 - api.moonshot.cn OpenAI兼容API, 思考模式默认开启
+                base_url = "https://api.moonshot.cn/v1"
+                logger.info(f"Configured Kimi K2.6 with api.moonshot.cn, model: {langchain_model}, base_url: {base_url}")
             
             # BEST PRACTICE: Balanced configuration for production use
             # Optimized for reliability, speed, and cost-effectiveness

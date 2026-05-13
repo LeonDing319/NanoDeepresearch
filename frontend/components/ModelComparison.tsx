@@ -21,8 +21,6 @@ import {
   Users,
   FileText,
   Key,
-  Upload,
-  Download,
   Settings,
   Timer,
   Activity
@@ -85,7 +83,7 @@ const ModelComparison = () => {
 
   // Multi-model comparison state
   const [query, setQuery] = useState('')
-  const [selectedModels, setSelectedModels] = useState<string[]>(['zhipu', 'deepseek', 'deepseek_v4_pro'])
+  const [selectedModels, setSelectedModels] = useState<string[]>(['zhipu', 'deepseek', 'deepseek_v4_pro', 'kimi_k2_6'])
   const [isRunning, setIsRunning] = useState(false)
   const [latestSession, setLatestSession] = useState<ComparisonSession | null>(null)
   const [earlyResults, setEarlyResults] = useState<ComparisonResult[]>([])
@@ -105,7 +103,8 @@ const ModelComparison = () => {
   const availableModels = [
     { id: 'zhipu', name: t.zhipuName, description: t.zhipuDesc },
     { id: 'deepseek', name: t.deepseekName, description: t.deepseekDesc },
-    { id: 'deepseek_v4_pro', name: t.deepseekV4ProName, description: t.deepseekV4ProDesc }
+    { id: 'deepseek_v4_pro', name: t.deepseekV4ProName, description: t.deepseekV4ProDesc },
+    { id: 'kimi_k2_6', name: t.kimiK26Name, description: t.kimiK26Desc }
   ]
 
   useEffect(() => {
@@ -386,40 +385,7 @@ const ModelComparison = () => {
   }, [isRunning])
 
   const getKeysConfigured = () => {
-    return Object.entries(apiKeys).filter(([, key]) => key.trim()).length
-  }
-
-  const exportKeys = () => {
-    const keysToExport = { ...apiKeys }
-    const blob = new Blob([JSON.stringify(keysToExport, null, 2)], { type: 'application/json' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = 'api-keys.json'
-    a.click()
-    URL.revokeObjectURL(url)
-  }
-
-  const importKeys = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (!file) return
-
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      try {
-        const keys = JSON.parse(e.target?.result as string)
-        if (keys.zhipu !== undefined || keys.deepseek !== undefined || keys.deepseek_v4_pro !== undefined) {
-          setApiKeys(keys)
-          setError(null)
-        } else {
-          setError('Invalid key file format')
-        }
-      } catch {
-        setError('Failed to parse key file')
-      }
-    }
-    reader.readAsText(file)
-    event.target.value = '' // Reset file input
+    return availableModels.filter(model => apiKeys[model.id as keyof typeof apiKeys]?.trim()).length
   }
 
   const getModelName = (id: string) => availableModels.find(m => m.id === id)?.name || id
@@ -456,31 +422,10 @@ const ModelComparison = () => {
             <Key className="w-5 h-5 text-zinc-900 dark:text-zinc-300" />
             <h3 className="text-lg font-medium text-gray-900 dark:text-white">{t.apiKeyConfig}</h3>
             <span className="text-sm text-zinc-700 dark:text-zinc-400 bg-zinc-50 dark:bg-zinc-900/20 px-2 py-1 rounded-md">
-              {getKeysConfigured()}/3 {t.configured}
+              {getKeysConfigured()}/{availableModels.length} {t.configured}
             </span>
           </div>
           <div className="flex items-center gap-2">
-            <input
-              type="file"
-              accept=".json"
-              onChange={importKeys}
-              className="hidden"
-              id="import-keys"
-            />
-            <label
-              htmlFor="import-keys"
-              className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-50 cursor-pointer flex items-center gap-1"
-            >
-              <Upload className="w-4 h-4" />
-              {t.import_}
-            </label>
-            <button
-              onClick={exportKeys}
-              className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-50 flex items-center gap-1"
-            >
-              <Download className="w-4 h-4" />
-              {t.export_}
-            </button>
             <button
               onClick={() => setShowKeyManager(!showKeyManager)}
               className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-50 flex items-center gap-1"

@@ -154,7 +154,7 @@ class SupabaseService:
         
         try:
             # Get aggregated metrics for each model
-            models = ["zhipu", "deepseek", "deepseek_v4_pro"]
+            models = ["zhipu", "deepseek", "deepseek_v4_pro", "kimi_k2_6"]
             metrics = []
             
             for model in models:

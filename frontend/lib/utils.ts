@@ -54,7 +54,8 @@ export function getModelDisplayName(modelId: string): string {
   const modelNames: Record<string, string> = {
     'zhipu': '智谱 GLM-4.7',
     'deepseek': 'DeepSeek V3.2',
-    'deepseek_v4_pro': 'DeepSeek V4 Pro'
+    'deepseek_v4_pro': 'DeepSeek V4 Pro',
+    'kimi_k2_6': 'Kimi K2.6'
   }
   return modelNames[modelId] || modelId
 }
@@ -66,7 +67,8 @@ export function getModelColor(modelId: string): string {
   const modelColors: Record<string, string> = {
     'zhipu': 'bg-blue-500',
     'deepseek': 'bg-green-500',
-    'deepseek_v4_pro': 'bg-purple-500'
+    'deepseek_v4_pro': 'bg-purple-500',
+    'kimi_k2_6': 'bg-orange-500'
   }
   return modelColors[modelId] || 'bg-gray-500'
 }

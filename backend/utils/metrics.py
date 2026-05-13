@@ -1,7 +1,7 @@
 # Directory: yt-DeepResearch-Backend/utils/metrics.py
 """
 Metrics Collection Service - Tracks and compares model performance
-Provides evaluation metrics for 智谱 GLM-4.7, DeepSeek V3.2, and DeepSeek V4 Pro comparison
+Provides evaluation metrics for 智谱 GLM-4.7, DeepSeek V3.2, DeepSeek V4 Pro, and Kimi K2.6 comparison
 """
 
 import json
@@ -34,7 +34,8 @@ class MetricsCollector:
         self.model_metrics: Dict[str, Dict] = {
             "zhipu": {"requests": [], "total_duration": 0, "success_count": 0},
             "deepseek": {"requests": [], "total_duration": 0, "success_count": 0},
-            "deepseek_v4_pro": {"requests": [], "total_duration": 0, "success_count": 0}
+            "deepseek_v4_pro": {"requests": [], "total_duration": 0, "success_count": 0},
+            "kimi_k2_6": {"requests": [], "total_duration": 0, "success_count": 0}
         }
     
     async def store_research_metrics(

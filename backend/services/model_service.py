@@ -1,7 +1,8 @@
 # Directory: deep-research-backend/services/model_service.py
 """
 Model Service - Manages AI model configurations and availability
-Supports Zhipu GLM, DeepSeek V3.2 (via Volcengine ARK), and DeepSeek V4 Pro (via DeepSeek official API)
+Supports Zhipu GLM (via Volcengine ARK), DeepSeek V3.2 (via Volcengine ARK),
+DeepSeek V4 Pro (via api.deepseek.com), and Kimi K2.6 (via api.moonshot.cn)
 """
 
 import logging
@@ -69,6 +70,23 @@ class ModelService:
                 ],
                 max_tokens=1000000
             ),
+            "kimi_k2_6": AvailableModel(
+                id="kimi_k2_6",
+                name="Kimi K2.6",
+                provider="Moonshot AI",
+                description="Kimi K2.6 - 1T总参数 MoE 模型，256K 上下文，思考模式默认开启",
+                capabilities=[
+                    "web_search",
+                    "document_analysis",
+                    "code_analysis",
+                    "multi-step_reasoning",
+                    "structured_output",
+                    "thinking_mode",
+                    "tool_calling",
+                    "long_context"
+                ],
+                max_tokens=256000
+            ),
         }
     
     async def get_available_models(self) -> Dict[str, List[AvailableModel]]:
@@ -82,7 +100,7 @@ class ModelService:
             return {
                 "models": list(self._models.values()),
                 "total_count": len(self._models),
-                "supported_providers": ["智谱AI", "DeepSeek"]
+                "supported_providers": ["智谱AI", "DeepSeek", "Moonshot AI"]
             }
         except Exception as e:
             logger.error(f"Error getting available models: {str(e)}")
@@ -125,7 +143,9 @@ class ModelService:
             # DeepSeek V3.2 - 火山引擎ARK平台 Endpoint ID
             "deepseek": "ep-20260210052620-d8jdr",
             # DeepSeek V4 Pro - api.deepseek.com model name
-            "deepseek_v4_pro": "deepseek-v4-pro"
+            "deepseek_v4_pro": "deepseek-v4-pro",
+            # Kimi K2.6 - api.moonshot.cn model name
+            "kimi_k2_6": "kimi-k2.6"
         }
     
     def get_api_key_env_var(self, model_id: str) -> Optional[str]:
@@ -139,8 +159,9 @@ class ModelService:
             Environment variable name or None
         """
         env_vars = {
-            "zhipu": "ZHIPU_API_KEY",            # 智谱AI API Key
-            "deepseek": "ARK_API_KEY",            # DeepSeek V3.2 via 火山引擎ARK平台
-            "deepseek_v4_pro": "DEEPSEEK_API_KEY" # DeepSeek V4 Pro via api.deepseek.com
+            "zhipu": "ZHIPU_API_KEY",             # 智谱AI API Key
+            "deepseek": "ARK_API_KEY",             # DeepSeek V3.2 via 火山引擎ARK平台
+            "deepseek_v4_pro": "DEEPSEEK_API_KEY", # DeepSeek V4 Pro via api.deepseek.com
+            "kimi_k2_6": "KIMI_API_KEY"            # Kimi K2.6 via api.moonshot.cn
         }
         return env_vars.get(model_id)

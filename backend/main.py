@@ -78,7 +78,7 @@ def _debug_log(
 # Initialize FastAPI app with comprehensive configuration
 app = FastAPI(
     title="Deep Research Agent API",
-    description="Streaming deep research API with multiple AI model support (Zhipu GLM-4.7, DeepSeek V3.2, DeepSeek V4 Pro)",
+    description="Streaming deep research API with multiple AI model support (Zhipu GLM-4.7, DeepSeek V3.2, DeepSeek V4 Pro, Kimi K2.6)",
     version="1.0.0",
     docs_url="/docs",
     redoc_url="/redoc"
@@ -124,7 +124,7 @@ async def health_check():
             "model_service": "active",
             "metrics_collector": "active"
         },
-        "supported_models": ["zhipu", "deepseek", "deepseek_v4_pro"]
+        "supported_models": ["zhipu", "deepseek", "deepseek_v4_pro", "kimi_k2_6"]
     }
 
 @app.post("/research/stream")

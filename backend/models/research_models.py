@@ -15,6 +15,7 @@ class ModelType(str, Enum):
     ZHIPU = "zhipu"                       # 智谱 GLM-4.7
     DEEPSEEK = "deepseek"                 # DeepSeek V3.2 via 火山 ARK
     DEEPSEEK_V4_PRO = "deepseek_v4_pro"   # DeepSeek V4 Pro via api.deepseek.com
+    KIMI_K2_6 = "kimi_k2_6"               # Kimi K2.6 via api.moonshot.cn
 
 
 class ResearchStage(str, Enum):

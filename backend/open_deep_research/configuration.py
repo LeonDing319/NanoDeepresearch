@@ -56,7 +56,7 @@ class Configuration(BaseModel):
             "x_oap_ui_config": {
                 "type": "string",
                 "default": None,
-                "description": "Base URL for OpenAI-compatible API endpoints (e.g., Zhipu, DeepSeek, DeepSeek V4 Pro)"
+                "description": "Base URL for OpenAI-compatible API endpoints (e.g., Zhipu, DeepSeek, DeepSeek V4 Pro, Kimi K2.6)"
             }
         }
     )

@@ -55,8 +55,6 @@ interface Translations {
   compareDescription: string
   apiKeyConfig: string
   configured: string
-  import_: string
-  export_: string
   configure: string
   clearAllKeys: string
   keysStoredLocally: string
@@ -112,6 +110,8 @@ interface Translations {
   deepseekDesc: string
   deepseekV4ProName: string
   deepseekV4ProDesc: string
+  kimiK26Name: string
+  kimiK26Desc: string
 }
 
 const translations: Record<Language, Translations> = {
@@ -163,8 +163,6 @@ const translations: Record<Language, Translations> = {
     compareDescription: '对比不同 AI 模型的性能指标。对同一问题运行多个模型，查看详细的时间、质量和性能差异。',
     apiKeyConfig: 'API 密钥配置',
     configured: '已配置',
-    import_: '导入',
-    export_: '导出',
     configure: '配置',
     clearAllKeys: '清除所有密钥',
     keysStoredLocally: '密钥保存在本地浏览器中',
@@ -218,6 +216,8 @@ const translations: Record<Language, Translations> = {
     deepseekDesc: 'DeepSeek V3.2 671B MoE模型，GPT-5级性能',
     deepseekV4ProName: 'DeepSeek V4 Pro',
     deepseekV4ProDesc: 'DeepSeek V4 Pro 1.6T参数 / 49B激活，1M上下文',
+    kimiK26Name: 'Kimi K2.6',
+    kimiK26Desc: 'Kimi K2.6 1T MoE 模型，256K 上下文，思考模式默认开启',
   },
   en: {
     appTitle: 'Nano Deepresearch',
@@ -267,8 +267,6 @@ const translations: Record<Language, Translations> = {
     compareDescription: 'Compare AI model performance across different metrics. Run the same query on multiple models to see detailed timing, quality, and performance differences.',
     apiKeyConfig: 'API Key Configuration',
     configured: 'configured',
-    import_: 'Import',
-    export_: 'Export',
     configure: 'Configure',
     clearAllKeys: 'Clear All Keys',
     keysStoredLocally: 'Keys are stored locally in your browser',
@@ -322,6 +320,8 @@ const translations: Record<Language, Translations> = {
     deepseekDesc: 'DeepSeek V3.2 671B MoE model, GPT-5 level performance',
     deepseekV4ProName: 'DeepSeek V4 Pro',
     deepseekV4ProDesc: 'DeepSeek V4 Pro 1.6T params / 49B active, 1M context',
+    kimiK26Name: 'Kimi K2.6',
+    kimiK26Desc: 'Kimi K2.6 1T MoE model, 256K context, thinking mode by default',
   }
 }
 
