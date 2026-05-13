@@ -353,7 +353,15 @@ class DeepResearchService:
                 # Kimi K2.6 - api.moonshot.cn OpenAI兼容API, 思考模式默认开启
                 base_url = "https://api.moonshot.cn/v1"
                 logger.info(f"Configured Kimi K2.6 with api.moonshot.cn, model: {langchain_model}, base_url: {base_url}")
-            
+
+            # 直连厂商官方 API 的思考型模型 (V4 Pro, K2.6) 在多轮 tool call 中
+            # 要求把 reasoning_content 回填到消息历史里, LangChain 当前不做这件事,
+            # 因此显式关闭 thinking 模式以保证多轮 pipeline 稳定运行.
+            # 走火山 ARK 的 GLM 和 V3.2 由聚合层归一化, 不受此约束影响.
+            extra_body = None
+            if model in ("deepseek_v4_pro", "kimi_k2_6"):
+                extra_body = {"thinking": {"type": "disabled"}}
+
             # BEST PRACTICE: Balanced configuration for production use
             # Optimized for reliability, speed, and cost-effectiveness
             config_dict = {
@@ -375,7 +383,8 @@ class DeepResearchService:
 
                 # API key and base URL configuration (concurrent-safe)
                 "user_api_key": user_api_key,
-                "base_url": base_url  # Base URL for OpenAI-compatible APIs
+                "base_url": base_url,  # Base URL for OpenAI-compatible APIs
+                "extra_body": extra_body  # Per-model extra body params (e.g., disable thinking)
             }
             
             # Add model provider if specified

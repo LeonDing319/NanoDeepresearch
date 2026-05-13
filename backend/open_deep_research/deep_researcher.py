@@ -53,7 +53,7 @@ from open_deep_research.utils import (
 
 # Initialize a configurable model that we will use throughout the agent
 configurable_model = init_chat_model(
-    configurable_fields=("model", "max_tokens", "api_key", "model_provider", "base_url"),
+    configurable_fields=("model", "max_tokens", "api_key", "model_provider", "base_url", "extra_body"),
 )
 
 async def clarify_with_user(state: AgentState, config: RunnableConfig) -> Command[Literal["write_research_brief", "__end__"]]:
@@ -84,6 +84,7 @@ async def clarify_with_user(state: AgentState, config: RunnableConfig) -> Comman
         "api_key": configurable.user_api_key,
         "model_provider": getattr(configurable, 'research_model_provider', None),
         "base_url": getattr(configurable, 'base_url', None),  # Concurrent-safe base URL
+        "extra_body": getattr(configurable, 'extra_body', None),
         "tags": ["langsmith:nostream"]
         # LEGACY: Old complex system (commented out for future env variable use)
         # "api_key": get_api_key_for_model(configurable.research_model, config),
@@ -148,6 +149,7 @@ async def write_research_brief(state: AgentState, config: RunnableConfig) -> Com
         "api_key": configurable.user_api_key,
         "model_provider": getattr(configurable, 'research_model_provider', None),
         "base_url": getattr(configurable, 'base_url', None),  # Concurrent-safe base URL
+        "extra_body": getattr(configurable, 'extra_body', None),
         "tags": ["langsmith:nostream"]
         # LEGACY: Old complex system (commented out for future env variable use)
         # "api_key": get_api_key_for_model(configurable.research_model, config),
@@ -226,6 +228,7 @@ async def supervisor(state: SupervisorState, config: RunnableConfig) -> Command[
         "api_key": configurable.user_api_key,
         "model_provider": getattr(configurable, 'research_model_provider', None),
         "base_url": getattr(configurable, 'base_url', None),  # Concurrent-safe base URL
+        "extra_body": getattr(configurable, 'extra_body', None),
         "tags": ["langsmith:nostream"]
         # LEGACY: Old complex system (commented out for future env variable use)
         # "api_key": get_api_key_for_model(configurable.research_model, config),
@@ -429,6 +432,7 @@ async def researcher(state: ResearcherState, config: RunnableConfig) -> Command[
         "api_key": configurable.user_api_key,
         "model_provider": getattr(configurable, 'research_model_provider', None),
         "base_url": getattr(configurable, 'base_url', None),  # Concurrent-safe base URL
+        "extra_body": getattr(configurable, 'extra_body', None),
         "tags": ["langsmith:nostream"]
         # LEGACY: Old complex system (commented out for future env variable use)
         # "api_key": get_api_key_for_model(configurable.research_model, config),
@@ -565,6 +569,7 @@ async def compress_research(state: ResearcherState, config: RunnableConfig):
         "api_key": configurable.user_api_key,
         "model_provider": getattr(configurable, 'compression_model_provider', None),
         "base_url": getattr(configurable, 'base_url', None),  # Concurrent-safe base URL
+        "extra_body": getattr(configurable, 'extra_body', None),
         "tags": ["langsmith:nostream"]
     })
     
@@ -668,6 +673,7 @@ async def final_report_generation(state: AgentState, config: RunnableConfig):
         "api_key": configurable.user_api_key,
         "model_provider": getattr(configurable, 'final_report_model_provider', None),
         "base_url": getattr(configurable, 'base_url', None),  # Concurrent-safe base URL
+        "extra_body": getattr(configurable, 'extra_body', None),
         "tags": ["langsmith:nostream"]
         # LEGACY: Old complex system (commented out for future env variable use)
         # "api_key": get_api_key_for_model(configurable.final_report_model, config),

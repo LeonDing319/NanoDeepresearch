@@ -2,7 +2,7 @@
 
 import os
 from enum import Enum
-from typing import Any, List, Optional
+from typing import Any, Dict, List, Optional
 
 from langchain_core.runnables import RunnableConfig
 from pydantic import BaseModel, Field
@@ -57,6 +57,18 @@ class Configuration(BaseModel):
                 "type": "string",
                 "default": None,
                 "description": "Base URL for OpenAI-compatible API endpoints (e.g., Zhipu, DeepSeek, DeepSeek V4 Pro, Kimi K2.6)"
+            }
+        }
+    )
+
+    # Extra body params for model request (e.g., disable thinking for DeepSeek V4 Pro and Kimi K2.6)
+    extra_body: Optional[Dict[str, Any]] = Field(
+        default=None,
+        metadata={
+            "x_oap_ui_config": {
+                "type": "json",
+                "default": None,
+                "description": "Extra body params forwarded to the model API. Used to disable thinking mode for direct provider APIs that require reasoning_content multi-turn preservation."
             }
         }
     )
