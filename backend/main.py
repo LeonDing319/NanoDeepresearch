@@ -21,7 +21,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
-from services.deep_research_service import DeepResearchService
+from services.deep_research_service import (
+    DeepResearchService,
+    SINGLE_RESEARCH_STAGE_MAP,
+    _build_stage_credentials,
+)
 from services.model_service import ModelService
 from models.research_models import (
     ResearchRequest,
@@ -130,34 +134,33 @@ async def health_check():
 @app.post("/research/stream")
 async def stream_research(request: ResearchRequest):
     """
-    Stream deep research process with real-time updates
-    
-    This endpoint provides Server-Sent Events streaming of the research process,
-    showing each stage, thinking process, and tool usage in real-time.
-    
-    Args:
-        request: Research request containing query, model, and API key
-    
+    Stream single research process with multi stage model dispatch.
+
+    Each pipeline stage binds to its own upstream model per the 4.3 product doc
+    decision: thinking nodes use Kimi K2.6, compression and final report use
+    DeepSeek V4 Pro. The frontend supplies both API keys via request.api_keys.
+    Compare research uses a separate /research/compare endpoint.
+
     Returns:
         StreamingResponse: Server-sent events stream
     """
     try:
-        # Validate the request
         if not request.query.strip():
             raise HTTPException(status_code=400, detail="Research query cannot be empty")
-        
-        if not request.api_key.strip():
-            raise HTTPException(status_code=400, detail="API key is required")
-        
-        # Validate model selection
-        available_models = await model_service.get_available_models()
-        if request.model not in [model.id for model in available_models["models"]]:
+
+        required_models = set(SINGLE_RESEARCH_STAGE_MAP.values())
+        missing = [m for m in required_models if not request.api_keys.get(m, "").strip()]
+        if missing:
             raise HTTPException(
-                status_code=400, 
-                detail=f"Unsupported model: {request.model}. Available models: {[m.id for m in available_models['models']]}"
+                status_code=400,
+                detail=f"Missing API keys for required models: {missing}",
             )
-        
-        # Create streaming generator
+
+        try:
+            stage_credentials = _build_stage_credentials(request.api_keys)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc))
+
         async def generate_research_stream() -> AsyncGenerator[str, None]:
             research_id = f"research_{int(time.time())}"
             start_time = time.time()
@@ -165,20 +168,19 @@ async def stream_research(request: ResearchRequest):
             heartbeat_interval_seconds = 20
             cancel_event = asyncio.Event()
             active_research_cancellations[research_id] = cancel_event
+            model_label = "multi_stage"
 
             try:
-                # Initialize research session
-                yield f"data: {json.dumps({'type': 'session_start', 'research_id': research_id, 'timestamp': datetime.utcnow().isoformat(), 'model': request.model, 'query': request.query})}\n\n"
+                yield f"data: {json.dumps({'type': 'session_start', 'research_id': research_id, 'timestamp': datetime.utcnow().isoformat(), 'model': model_label, 'query': request.query})}\n\n"
                 # region agent log
                 _debug_log(
                     hypothesis_id="H4",
                     location="main.py:generate_research_stream:session_start",
                     message="backend_session_started",
-                    data={"researchId": research_id, "model": request.model},
+                    data={"researchId": research_id, "model": model_label},
                 )
                 # endregion
 
-                # Stream research via queue so heartbeat can be emitted during long model/tool calls
                 event_queue: asyncio.Queue[Optional[StreamingEvent]] = asyncio.Queue()
                 producer_error: Optional[Exception] = None
                 collected_report_content: str = ""
@@ -188,10 +190,11 @@ async def stream_research(request: ResearchRequest):
                     try:
                         async for produced_event in research_service.stream_research(
                             query=request.query,
-                            model=request.model,
-                            api_key=request.api_key,
+                            model=model_label,
+                            api_key="",
                             research_id=research_id,
                             cancel_event=cancel_event,
+                            stage_credentials=stage_credentials,
                         ):
                             await event_queue.put(produced_event)
                     except Exception as producer_exception:
@@ -286,16 +289,16 @@ async def stream_research(request: ResearchRequest):
                     'type': 'research_complete',
                     'research_id': research_id,
                     'duration': duration,
-                    'model': request.model,
+                    'model': model_label,
                     'timestamp': datetime.utcnow().isoformat(),
                     'report_content': collected_report_content.strip() if collected_report_content else '',
                 }
                 yield f"data: {json.dumps(completion_event)}\n\n"
 
-                # Store metrics for comparison
+                # Store metrics for history
                 await metrics_collector.store_research_metrics(
                     research_id=research_id,
-                    model=request.model,
+                    model=model_label,
                     duration=duration,
                     query=request.query
                 )
@@ -680,10 +683,9 @@ async def run_multi_model_comparison(request: MultiModelComparisonRequest):
 async def test_research_endpoint(request: ResearchRequest):
     """Test endpoint for development and debugging"""
     return {
-        "message": "Test endpoint - research parameters received",
+        "message": "Test endpoint, research parameters received",
         "query": request.query,
-        "model": request.model,
-        "api_key_length": len(request.api_key) if request.api_key else 0,
+        "api_keys_provided": {k: bool(v.strip()) for k, v in request.api_keys.items()},
         "timestamp": datetime.utcnow().isoformat()
     }
 

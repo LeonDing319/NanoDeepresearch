@@ -14,6 +14,18 @@ class SearchAPI(Enum):
     DUCKDUCKGO = "duckduckgo"
     NONE = "none"
 
+class StageCredential(BaseModel):
+    """Per pipeline stage credentials (api_key + base_url + extra_body).
+
+    Used by single research mode to bind different upstream models to different
+    pipeline stages (thinking / compression / final_report).
+    """
+
+    api_key: Optional[str] = Field(default=None)
+    base_url: Optional[str] = Field(default=None)
+    extra_body: Optional[Dict[str, Any]] = Field(default=None)
+
+
 class MCPConfig(BaseModel):
     """Configuration for Model Context Protocol (MCP) servers."""
     
@@ -69,6 +81,20 @@ class Configuration(BaseModel):
                 "type": "json",
                 "default": None,
                 "description": "Extra body params forwarded to the model API. Used to disable thinking mode for direct provider APIs that require reasoning_content multi-turn preservation."
+            }
+        }
+    )
+
+    # Per stage credentials for multi stage single research mode (research / compression / final_report)
+    # If set, overrides the global user_api_key / base_url / extra_body for that stage.
+    # Compare research mode leaves this None and falls back to the globals.
+    stage_credentials: Optional[Dict[str, StageCredential]] = Field(
+        default=None,
+        metadata={
+            "x_oap_ui_config": {
+                "type": "json",
+                "default": None,
+                "description": "Per pipeline stage credentials (research / compression / final_report). Each entry has api_key / base_url / extra_body. Falls back to globals when not set."
             }
         }
     )

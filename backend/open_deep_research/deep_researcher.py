@@ -56,6 +56,33 @@ configurable_model = init_chat_model(
     configurable_fields=("model", "max_tokens", "api_key", "model_provider", "base_url", "extra_body"),
 )
 
+
+def _resolve_stage_creds(configurable, stage: str) -> dict:
+    """Return per stage api_key / base_url / extra_body for a pipeline stage.
+
+    Priority: configurable.stage_credentials[stage] when present, otherwise fall
+    back to the global configurable.user_api_key / base_url / extra_body. Used by
+    single research mode to bind different upstream models to thinking / compression /
+    final_report stages; compare research mode leaves stage_credentials unset and
+    naturally uses the globals.
+    """
+    stage_creds = getattr(configurable, "stage_credentials", None)
+    if stage_creds and stage in stage_creds:
+        sc = stage_creds[stage]
+        api_key = getattr(sc, "api_key", None) if not isinstance(sc, dict) else sc.get("api_key")
+        base_url = getattr(sc, "base_url", None) if not isinstance(sc, dict) else sc.get("base_url")
+        extra_body = getattr(sc, "extra_body", None) if not isinstance(sc, dict) else sc.get("extra_body")
+        return {
+            "api_key": api_key if api_key is not None else configurable.user_api_key,
+            "base_url": base_url if base_url is not None else getattr(configurable, "base_url", None),
+            "extra_body": extra_body if extra_body is not None else getattr(configurable, "extra_body", None),
+        }
+    return {
+        "api_key": configurable.user_api_key,
+        "base_url": getattr(configurable, "base_url", None),
+        "extra_body": getattr(configurable, "extra_body", None),
+    }
+
 async def clarify_with_user(state: AgentState, config: RunnableConfig) -> Command[Literal["write_research_brief", "__end__"]]:
     """Analyze user messages and ask clarifying questions if the research scope is unclear.
     
@@ -80,11 +107,8 @@ async def clarify_with_user(state: AgentState, config: RunnableConfig) -> Comman
     model_config = {
         "model": configurable.research_model,
         "max_tokens": configurable.research_model_max_tokens,
-        # SIMPLIFIED: Direct user API key access (no more complex lookup)
-        "api_key": configurable.user_api_key,
         "model_provider": getattr(configurable, 'research_model_provider', None),
-        "base_url": getattr(configurable, 'base_url', None),  # Concurrent-safe base URL
-        "extra_body": getattr(configurable, 'extra_body', None),
+        **_resolve_stage_creds(configurable, "research"),
         "tags": ["langsmith:nostream"]
         # LEGACY: Old complex system (commented out for future env variable use)
         # "api_key": get_api_key_for_model(configurable.research_model, config),
@@ -145,11 +169,8 @@ async def write_research_brief(state: AgentState, config: RunnableConfig) -> Com
     research_model_config = {
         "model": configurable.research_model,
         "max_tokens": configurable.research_model_max_tokens,
-        # SIMPLIFIED: Direct user API key access (no more complex lookup)
-        "api_key": configurable.user_api_key,
         "model_provider": getattr(configurable, 'research_model_provider', None),
-        "base_url": getattr(configurable, 'base_url', None),  # Concurrent-safe base URL
-        "extra_body": getattr(configurable, 'extra_body', None),
+        **_resolve_stage_creds(configurable, "research"),
         "tags": ["langsmith:nostream"]
         # LEGACY: Old complex system (commented out for future env variable use)
         # "api_key": get_api_key_for_model(configurable.research_model, config),
@@ -224,11 +245,8 @@ async def supervisor(state: SupervisorState, config: RunnableConfig) -> Command[
     research_model_config = {
         "model": configurable.research_model,
         "max_tokens": configurable.research_model_max_tokens,
-        # SIMPLIFIED: Direct user API key access (no more complex lookup)
-        "api_key": configurable.user_api_key,
         "model_provider": getattr(configurable, 'research_model_provider', None),
-        "base_url": getattr(configurable, 'base_url', None),  # Concurrent-safe base URL
-        "extra_body": getattr(configurable, 'extra_body', None),
+        **_resolve_stage_creds(configurable, "research"),
         "tags": ["langsmith:nostream"]
         # LEGACY: Old complex system (commented out for future env variable use)
         # "api_key": get_api_key_for_model(configurable.research_model, config),
@@ -428,11 +446,8 @@ async def researcher(state: ResearcherState, config: RunnableConfig) -> Command[
     research_model_config = {
         "model": configurable.research_model,
         "max_tokens": configurable.research_model_max_tokens,
-        # SIMPLIFIED: Direct user API key access (no more complex lookup)
-        "api_key": configurable.user_api_key,
         "model_provider": getattr(configurable, 'research_model_provider', None),
-        "base_url": getattr(configurable, 'base_url', None),  # Concurrent-safe base URL
-        "extra_body": getattr(configurable, 'extra_body', None),
+        **_resolve_stage_creds(configurable, "research"),
         "tags": ["langsmith:nostream"]
         # LEGACY: Old complex system (commented out for future env variable use)
         # "api_key": get_api_key_for_model(configurable.research_model, config),
@@ -565,11 +580,8 @@ async def compress_research(state: ResearcherState, config: RunnableConfig):
     synthesizer_model = configurable_model.with_config({
         "model": configurable.compression_model,
         "max_tokens": configurable.compression_model_max_tokens,
-        # SIMPLIFIED: Direct user API key access (no more complex lookup)
-        "api_key": configurable.user_api_key,
         "model_provider": getattr(configurable, 'compression_model_provider', None),
-        "base_url": getattr(configurable, 'base_url', None),  # Concurrent-safe base URL
-        "extra_body": getattr(configurable, 'extra_body', None),
+        **_resolve_stage_creds(configurable, "compression"),
         "tags": ["langsmith:nostream"]
     })
     
@@ -669,14 +681,9 @@ async def final_report_generation(state: AgentState, config: RunnableConfig):
     writer_model_config = {
         "model": configurable.final_report_model,
         "max_tokens": configurable.final_report_model_max_tokens,
-        # SIMPLIFIED: Direct user API key access (no more complex lookup)
-        "api_key": configurable.user_api_key,
         "model_provider": getattr(configurable, 'final_report_model_provider', None),
-        "base_url": getattr(configurable, 'base_url', None),  # Concurrent-safe base URL
-        "extra_body": getattr(configurable, 'extra_body', None),
+        **_resolve_stage_creds(configurable, "final_report"),
         "tags": ["langsmith:nostream"]
-        # LEGACY: Old complex system (commented out for future env variable use)
-        # "api_key": get_api_key_for_model(configurable.final_report_model, config),
     }
     
     # Step 3: Attempt report generation with token limit retry logic

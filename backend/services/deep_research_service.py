@@ -34,6 +34,51 @@ from services.model_service import ModelService
 logger = logging.getLogger(__name__)
 
 
+# Single research mode binds different upstream models to different pipeline stages
+# per the 4.3 model selection decision in the product doc.
+SINGLE_RESEARCH_STAGE_MAP: Dict[str, str] = {
+    "research": "kimi_k2_6",          # 意图识别 + 研究简报 + supervisor + researcher
+    "compression": "deepseek_v4_pro", # compress_research
+    "final_report": "deepseek_v4_pro" # final report generation
+}
+
+
+# Per model upstream endpoint settings (base_url + extra_body) used when building
+# multi stage stage_credentials. Mirrors the single model branch logic in
+# _create_research_config so the two paths agree on connection details.
+_MODEL_UPSTREAM: Dict[str, Dict[str, Any]] = {
+    "kimi_k2_6": {
+        "base_url": "https://api.moonshot.cn/v1",
+        "extra_body": {"thinking": {"type": "disabled"}},
+    },
+    "deepseek_v4_pro": {
+        "base_url": "https://api.deepseek.com/v1",
+        "extra_body": {"thinking": {"type": "disabled"}},
+    },
+}
+
+
+def _build_stage_credentials(api_keys: Dict[str, str]) -> Dict[str, Dict[str, Any]]:
+    """Translate per model api_keys into per stage credentials.
+
+    Maps the fixed SINGLE_RESEARCH_STAGE_MAP plus _MODEL_UPSTREAM into a dict
+    keyed by stage (research / compression / final_report) with api_key / base_url
+    / extra_body for each. Raises ValueError if a required key is missing.
+    """
+    creds: Dict[str, Dict[str, Any]] = {}
+    for stage, model_id in SINGLE_RESEARCH_STAGE_MAP.items():
+        key = api_keys.get(model_id, "").strip()
+        if not key:
+            raise ValueError(f"Missing API key for model '{model_id}' (stage '{stage}')")
+        upstream = _MODEL_UPSTREAM.get(model_id, {})
+        creds[stage] = {
+            "api_key": key,
+            "base_url": upstream.get("base_url"),
+            "extra_body": upstream.get("extra_body"),
+        }
+    return creds
+
+
 class DeepResearchService:
     """Service for handling deep research operations with streaming support"""
     
@@ -70,18 +115,24 @@ class DeepResearchService:
         api_key: str,
         research_id: str,
         cancel_event: Optional[asyncio.Event] = None,
-        comparison_mode: bool = False
+        comparison_mode: bool = False,
+        stage_credentials: Optional[Dict[str, Dict[str, Any]]] = None,
     ) -> AsyncGenerator[StreamingEvent, None]:
         """
         Stream the deep research process with real-time updates
 
         Args:
             query: Research question/topic
-            model: AI model to use (zhipu, deepseek, deepseek_v4_pro, kimi_k2_6)
-            api_key: User's API key for the selected model
+            model: AI model to use (zhipu, deepseek, deepseek_v4_pro, kimi_k2_6,
+                or "multi_stage" for single research multi stage dispatch)
+            api_key: User's API key for the selected model (may be empty when
+                stage_credentials is provided)
             research_id: Unique identifier for this research session
             cancel_event: Optional event to signal cancellation
             comparison_mode: If True, use conservative settings for parallel execution
+            stage_credentials: Optional per stage credentials for single research
+                multi stage mode. When set, overrides the global model + api_key
+                resolution and binds each pipeline stage to its own upstream.
 
         Yields:
             StreamingEvent: Real-time updates about the research progress
@@ -98,7 +149,11 @@ class DeepResearchService:
         
         try:
             # Configure the research workflow and capture resolved model name
-            config, resolved_models = await self._create_research_config(model, api_key, comparison_mode=comparison_mode)
+            config, resolved_models = await self._create_research_config(
+                model, api_key,
+                comparison_mode=comparison_mode,
+                stage_credentials=stage_credentials,
+            )
             
             # Create initial state
             initial_state = AgentInputState(
@@ -310,97 +365,136 @@ class DeepResearchService:
                 error=str(e)
             )
     
-    async def _create_research_config(self, model: str, api_key: str, comparison_mode: bool = False) -> tuple[RunnableConfig, dict]:
+    async def _create_research_config(
+        self,
+        model: str,
+        api_key: str,
+        comparison_mode: bool = False,
+        stage_credentials: Optional[Dict[str, Dict[str, Any]]] = None,
+    ) -> tuple[RunnableConfig, dict]:
         """
         Create LangChain configuration for the research workflow
 
         Args:
-            model: Model identifier
-            api_key: User's API key
+            model: Model identifier (or "multi_stage" when stage_credentials is set)
+            api_key: User's API key (ignored when stage_credentials is set)
             comparison_mode: If True, use conservative settings for parallel execution
+            stage_credentials: Optional per stage credentials. When set, builds a
+                multi stage config where each pipeline stage binds to its own
+                upstream model + api_key + base_url. Used by single research mode.
 
         Returns:
             RunnableConfig for the research workflow
         """
         try:
-            # Get model mapping
             model_mapping = self.model_service.get_model_provider_mapping()
-            langchain_model = model_mapping.get(model, model)
-            
-            # SIMPLIFIED: Direct user API key approach
-            # Store user's API key directly in config for immediate use
-            user_api_key = api_key
-            
-            # Configure base URL for different model providers (Chinese AI models)
-            # All models use OpenAI-compatible API format
-            # NOTE: Using config-based base_url instead of global os.environ for concurrent safety
             model_provider = "openai"  # All use OpenAI-compatible API
+
+            if stage_credentials:
+                # Multi stage path: each pipeline stage binds to its own upstream model.
+                research_model_id = SINGLE_RESEARCH_STAGE_MAP["research"]
+                compression_model_id = SINGLE_RESEARCH_STAGE_MAP["compression"]
+                final_report_model_id = SINGLE_RESEARCH_STAGE_MAP["final_report"]
+                research_lc_model = model_mapping.get(research_model_id, research_model_id)
+                compression_lc_model = model_mapping.get(compression_model_id, compression_model_id)
+                final_report_lc_model = model_mapping.get(final_report_model_id, final_report_model_id)
+
+                logger.info(
+                    "Configured single research multi stage dispatch: "
+                    f"research={research_model_id} ({research_lc_model}), "
+                    f"compression={compression_model_id} ({compression_lc_model}), "
+                    f"final_report={final_report_model_id} ({final_report_lc_model})"
+                )
+
+                config_dict = {
+                    "research_model": research_lc_model,
+                    "research_model_max_tokens": 4000,
+                    "compression_model": compression_lc_model,
+                    "compression_model_max_tokens": 4000,
+                    "final_report_model": final_report_lc_model,
+                    "final_report_model_max_tokens": 8000,
+                    "allow_clarification": False,
+                    "max_structured_output_retries": 2,
+                    "search_api": "duckduckgo",
+                    "max_researcher_iterations": 1,
+                    "max_react_tool_calls": 2 if comparison_mode else 3,
+                    "max_concurrent_research_units": 1 if comparison_mode else 2,
+
+                    # Per stage credentials override the global user_api_key / base_url / extra_body.
+                    "stage_credentials": stage_credentials,
+                    "research_model_provider": model_provider,
+                    "compression_model_provider": model_provider,
+                    "final_report_model_provider": model_provider,
+                }
+
+                config = RunnableConfig(
+                    configurable=config_dict,
+                    metadata={"model_type": "multi_stage"},
+                )
+                return config, {
+                    "research_model": (
+                        f"{research_lc_model} (research) + "
+                        f"{compression_lc_model} (compression) + "
+                        f"{final_report_lc_model} (final_report)"
+                    ),
+                    "provider": "multi_stage",
+                }
+
+            # Single model path (used by compare mode and any legacy single research call)
+            langchain_model = model_mapping.get(model, model)
+            user_api_key = api_key
             base_url = None
 
             if model == "zhipu":
-                # 智谱 GLM-4.7 - 火山引擎ARK平台 OpenAI兼容API
+                # 智谱 GLM-4.7, 火山引擎ARK平台 OpenAI兼容API
                 base_url = "https://ark.cn-beijing.volces.com/api/v3"
                 logger.info(f"Configured 智谱 GLM-4.7 with Volcengine ARK API, model: {langchain_model}, base_url: {base_url}")
             elif model == "deepseek":
-                # DeepSeek V3.2 - 火山引擎ARK平台 OpenAI兼容API
+                # DeepSeek V3.2, 火山引擎ARK平台 OpenAI兼容API
                 base_url = "https://ark.cn-beijing.volces.com/api/v3"
                 logger.info(f"Configured DeepSeek V3.2 with Volcengine ARK API, model: {langchain_model}, base_url: {base_url}")
             elif model == "deepseek_v4_pro":
-                # DeepSeek V4 Pro - api.deepseek.com OpenAI兼容API
                 base_url = "https://api.deepseek.com/v1"
                 logger.info(f"Configured DeepSeek V4 Pro with api.deepseek.com, model: {langchain_model}, base_url: {base_url}")
             elif model == "kimi_k2_6":
-                # Kimi K2.6 - api.moonshot.cn OpenAI兼容API, 思考模式默认开启
                 base_url = "https://api.moonshot.cn/v1"
                 logger.info(f"Configured Kimi K2.6 with api.moonshot.cn, model: {langchain_model}, base_url: {base_url}")
 
             # 直连厂商官方 API 的思考型模型 (V4 Pro, K2.6) 在多轮 tool call 中
             # 要求把 reasoning_content 回填到消息历史里, LangChain 当前不做这件事,
             # 因此显式关闭 thinking 模式以保证多轮 pipeline 稳定运行.
-            # 走火山 ARK 的 GLM 和 V3.2 由聚合层归一化, 不受此约束影响.
             extra_body = None
             if model in ("deepseek_v4_pro", "kimi_k2_6"):
                 extra_body = {"thinking": {"type": "disabled"}}
 
-            # BEST PRACTICE: Balanced configuration for production use
-            # Optimized for reliability, speed, and cost-effectiveness
             config_dict = {
                 "research_model": langchain_model,
                 "research_model_max_tokens": 4000,
-                "final_report_model": langchain_model,  # Use same model for final report
+                "final_report_model": langchain_model,
                 "final_report_model_max_tokens": 8000,
-                "compression_model": langchain_model,  # Use same model for compression
+                "compression_model": langchain_model,
                 "compression_model_max_tokens": 4000,
-                "allow_clarification": False,  # Skip clarification for faster results
-                "max_structured_output_retries": 2,  # Reasonable retry limit
-                "search_api": "duckduckgo",  # Free web search compatible with all models (including Chinese AI)
-
-                # Research limits: more conservative in comparison mode to avoid
-                # DuckDuckGo rate limiting and API contention with parallel models
+                "allow_clarification": False,
+                "max_structured_output_retries": 2,
+                "search_api": "duckduckgo",
                 "max_researcher_iterations": 1,
                 "max_react_tool_calls": 2 if comparison_mode else 3,
                 "max_concurrent_research_units": 1 if comparison_mode else 2,
-
-                # API key and base URL configuration (concurrent-safe)
                 "user_api_key": user_api_key,
-                "base_url": base_url,  # Base URL for OpenAI-compatible APIs
-                "extra_body": extra_body  # Per-model extra body params (e.g., disable thinking)
+                "base_url": base_url,
+                "extra_body": extra_body,
             }
-            
-            # Add model provider if specified
+
             if model_provider:
                 config_dict["research_model_provider"] = model_provider
                 config_dict["final_report_model_provider"] = model_provider
                 config_dict["compression_model_provider"] = model_provider
-            
+
             config = RunnableConfig(
                 configurable=config_dict,
-                metadata={
-                    "model_type": model
-                }
+                metadata={"model_type": model},
             )
-            
-            # Return config plus resolved model/provider for transparency
+
             return config, {
                 "research_model": langchain_model,
                 "provider": model_provider or model,

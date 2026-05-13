@@ -37,3 +37,7 @@ backend/dist/
 .idea/
 *.swp
 *.swo
+
+# Local docs that should not be committed (per CLAUDE.md note)
+CLAUDE.md
+plan.md

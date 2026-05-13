@@ -16,6 +16,7 @@ class ModelType(str, Enum):
     DEEPSEEK = "deepseek"                 # DeepSeek V3.2 via 火山 ARK
     DEEPSEEK_V4_PRO = "deepseek_v4_pro"   # DeepSeek V4 Pro via api.deepseek.com
     KIMI_K2_6 = "kimi_k2_6"               # Kimi K2.6 via api.moonshot.cn
+    MULTI_STAGE = "multi_stage"           # Single research mode with per stage model dispatch
 
 
 class ResearchStage(str, Enum):
@@ -37,11 +38,17 @@ class ResearchStage(str, Enum):
 
 
 class ResearchRequest(BaseModel):
-    """Request model for deep research API"""
+    """Request model for single research API (multi stage dispatch).
+
+    Single research mode binds thinking nodes to Kimi K2.6 and compression /
+    final_report to DeepSeek V4 Pro. The frontend must supply both API keys.
+    """
     query: str = Field(..., description="Research question or topic", min_length=1)
-    model: ModelType = Field(..., description="AI model to use for research")
-    api_key: str = Field(..., description="User's API key for the selected model", min_length=1)
-    
+    api_keys: Dict[str, str] = Field(
+        ...,
+        description="API keys keyed by model id (e.g., kimi_k2_6, deepseek_v4_pro)",
+    )
+
     class Config:
         """Pydantic configuration"""
         json_encoders = {
