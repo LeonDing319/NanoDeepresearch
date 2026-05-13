@@ -506,15 +506,15 @@ function MainContent() {
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-h-0">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
-          <TabsContent value="research" className="flex-1 m-0 overflow-hidden">
+          <TabsContent forceMount value="research" className="flex-1 m-0 overflow-hidden data-[state=inactive]:hidden">
             <ResearchInterface />
           </TabsContent>
 
-          <TabsContent value="comparison" className="flex-1 m-0 overflow-y-auto min-h-0 bg-gray-50 dark:bg-neutral-900">
+          <TabsContent forceMount value="comparison" className="flex-1 m-0 overflow-y-auto min-h-0 bg-gray-50 dark:bg-neutral-900 data-[state=inactive]:hidden">
             <ModelComparison />
           </TabsContent>
 
-          <TabsContent value="history" className="flex-1 m-0 overflow-hidden bg-white dark:bg-neutral-900">
+          <TabsContent forceMount value="history" className="flex-1 m-0 overflow-hidden bg-white dark:bg-neutral-900 data-[state=inactive]:hidden">
             <ResearchHistoryPanel />
           </TabsContent>
         </Tabs>
