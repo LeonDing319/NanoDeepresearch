@@ -1,4 +1,4 @@
-# Leon Deepresearch
+# Nano Deepresearch
 
 A full stack Deep Research Agent product. Multi agent harness built on LangGraph, paired with a Next.js frontend.
 
